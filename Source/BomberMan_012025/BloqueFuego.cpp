@@ -18,7 +18,7 @@ ABloqueFuego::ABloqueFuego()
 	// Configuración del actor
     PrimaryActorTick.bCanEverTick = true; // Habilitar Tick()
 
-    VelocidadRotacion = FRotator(0.0f, 100.0f, 0.0f); // Rotar en el eje Y a 100 grados por segundo
+    VelocidadRotacion = FRotator(0.0f, 30.0f, 0.0f); // Rotar en el eje Y a 100 grados por segundo
 }
 
 void ABloqueFuego::BeginPlay()

@@ -16,4 +16,13 @@ class BOMBERMAN_012025_API ABloqueMadera : public ABloque
 
 public:
 	ABloqueMadera();
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+private:
+	void AlternarVisibilidad(); // Método para ocultar y mostrar el bloque
+	FTimerHandle TimerHandle; // Timer para controlar la visibilidad
+	bool bEsVisible; // Estado de visibilidad
 };

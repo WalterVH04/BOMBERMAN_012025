@@ -19,6 +19,9 @@
 #include "EnemigoAcuatico.h"
 #include "EnemigoAereo.h"
 #include "EnemigoSubterraneo.h"
+//#include "Kismet/KismetMathLibrary.h"
+
+
 
 ABomberMan_012025GameMode::ABomberMan_012025GameMode()
 {
@@ -29,6 +32,9 @@ ABomberMan_012025GameMode::ABomberMan_012025GameMode()
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
 }
+
+FTimerHandle TimerHandle_MovimientoBloques;//2
+TArray<ABloque*> BloquesMovibles;//2
 
 void ABomberMan_012025GameMode::BeginPlay()
 {
@@ -56,10 +62,123 @@ void ABomberMan_012025GameMode::BeginPlay()
 		}
 	}
 	//GetWorld()->GetTimerManager().SetTimer(tHDestruirBloques, this, &ABomberMan_012025GameMode::DestruirBloque, 2.0f, true);
-	GetWorld()->GetTimerManager().SetTimer(tHDestruirBloques, this, &ABomberMan_012025GameMode::DestruirBloqueBurbuja, 1.0f, true);
+	GetWorld()->GetTimerManager().SetTimer(tHDestruirBloques, this, &ABomberMan_012025GameMode::DestruirBloqueMadera, 1.0f, true);
 
 	GetWorld()->GetTimerManager().SetTimer(tHDestruirEnemigos, this, &ABomberMan_012025GameMode::DestruirEnemigos, 3.0f, true);
+
+
+
+	
+	
+	//insciso 1)
+		// Generación del muro de madera en la mitad del mapa
+		/*FVector PosicionInicialMuro = FVector(750.0f, 0.0f, 0.0f); // Ajusta la posición inicial del muro según la mitad del mapa
+		float Espaciado = 100.0f; // Espaciado entre bloques
+
+		for (int i = 0; i < 45; ++i)
+		{
+			FVector PosicionBloque = PosicionInicialMuro + FVector(0.0f, i * Espaciado, 0.0f);
+			GetWorld()->SpawnActor<ABloqueMadera>(ABloqueMadera::StaticClass(), PosicionBloque, FRotator::ZeroRotator);
+		}*/
+		
+			
+
+		//para colocar a bomberman sobre un bloque de 
+		TArray<ABloqueMadera*> BloquesCercanosABordes;
+
+		// Filtrar bloques de madera cercanos a los bordes
+		for (ABloque* Bloque : aBloques) {
+			if (Bloque->IsA(ABloqueMadera::StaticClass())) {
+				FVector Posicion = Bloque->GetActorLocation();
+		
+				// Verifica si el bloque está cerca de los bordes del laberinto
+				if (Posicion.X <= XInicial + AnchoBloque ||
+					Posicion.X >= XInicial + (aMapaBloques[0].Num() - 1) * AnchoBloque ||
+					Posicion.Y <= YInicial + LargoBloque ||
+					Posicion.Y >= YInicial + (aMapaBloques.Num() - 1) * LargoBloque) {
+
+					BloquesCercanosABordes.Add(Cast<ABloqueMadera>(Bloque));
+				}
+			}
+		}
+
+		// Si hay bloques de madera cercanos a los bordes, selecciona uno aleatoriamente
+		// Seleccionar aleatoriamente un bloque de madera cercano al borde
+		if (BloquesCercanosABordes.Num() > 0) {
+			int IndexAleatorio = FMath::RandRange(0, BloquesCercanosABordes.Num() - 1);
+			FVector PosicionBomberMan = BloquesCercanosABordes[IndexAleatorio]->GetActorLocation() + FVector(0, 0, 250);
+
+			// Ubicar a BomberMan sobre ese bloque
+			APawn* BomberMan = GetWorld()->GetFirstPlayerController()->GetPawn();
+			if (BomberMan) {
+				BomberMan->SetActorLocation(PosicionBomberMan + FVector(0, 0, 100)); // Ajuste en Z para evitar colisiones
+			}
+
+		}
+
+
+
+
+	
+		// Seleccionar cuatro bloques aleatorios para el movimiento
+		int NumBloquesSeleccionados = 0;
+		while (NumBloquesSeleccionados < 4 && aBloques.Num() > 0)
+		{
+			int IndexAleatorio = FMath::RandRange(0, aBloques.Num() - 1);
+			ABloque* BloqueSeleccionado = aBloques[IndexAleatorio];
+
+			if (!BloquesMovibles.Contains(BloqueSeleccionado))
+			{
+				BloquesMovibles.Add(BloqueSeleccionado);
+				NumBloquesSeleccionados++;
+			}
+		}
+
+		// Activar temporizador para mover los bloques cada 3 segundos
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_MovimientoBloques, this, &ABomberMan_012025GameMode::MoverBloquesAleatorio, 1.0f, true);
+
+
 }
+
+
+void ABomberMan_012025GameMode::MoverBloquesAleatorio()
+{
+	for (ABloque* Bloque : BloquesMovibles)
+	{
+		if (!Bloque) continue;
+
+		// Elegir aleatoriamente una dirección de movimiento
+		int Direccion = FMath::RandRange(0, 3); // 0: Izquierda, 1: Derecha, 2: Arriba, 3: Abajo
+
+		FVector NuevaPosicion = Bloque->GetActorLocation();
+		float EspacioMovimiento = 100.0f; // Tamaño del bloque o unidad de movimiento
+
+		if (Direccion == 0)
+		{
+			NuevaPosicion.X -= EspacioMovimiento; // Izquierda
+		}
+		else if (Direccion == 1)
+		{
+			NuevaPosicion.X += EspacioMovimiento; // Derecha
+		}
+		else if (Direccion == 2)
+		{
+			NuevaPosicion.Y += EspacioMovimiento; // Arriba
+		}
+		else if (Direccion == 3)
+		{
+			NuevaPosicion.Y -= EspacioMovimiento; // Abajo
+		}
+
+		// Actualizar la posición del bloque
+		Bloque->SetActorLocation(NuevaPosicion);
+		UE_LOG(LogTemp, Warning, TEXT("Bloque movido a: %s"), *NuevaPosicion.ToString());
+	}
+}
+
+
+
+
 
 // Función para generar un bloque
 void ABomberMan_012025GameMode::SpawnBloque(FVector posicionBloque, int32 tipoBloque)
@@ -157,24 +276,29 @@ void ABomberMan_012025GameMode::SpawnBloque(FVector posicionBloque, int32 tipoBl
 	}
 }*/  //HASTA AQUI ES TODOOOO...
 
-//para destruir bloqueburbuja con el tarray de bloque
-void ABomberMan_012025GameMode::DestruirBloqueBurbuja()
+//para destruir bloqueMadera con el tarray de bloque
+void ABomberMan_012025GameMode::DestruirBloqueMadera()
 {
 	//Seleccionar aleatoriamente un bloque del array ABloques para su eliminacion
 	int numeroBloques = aBloques.Num();
 	int NumeroAleatorio = FMath::RandRange(1, numeroBloques);
 	if (aBloques.Num() > 0)
 	{
-	ABloqueBurbuja* BloqueBurbuja = Cast<ABloqueBurbuja>(aBloques[NumeroAleatorio]); // Obtén el primer bloque
-	if (BloqueBurbuja)
-{
-				BloqueBurbuja->Destroy();
+		ABloqueMadera* BloqueMadera = Cast<ABloqueMadera>(aBloques[NumeroAleatorio]); // Obtén el primer bloque
+			if (BloqueMadera)
+			{
+				BloqueMadera->Destroy();
 				// Realiza operaciones con el bloque
 				//primerBloque->SetActorLocation(FVector(100.0f, 100.0f, 100.0f));
 
 			}
-		}
+	}
+
 }
+
+
+
+
 
 //para destruir a los enemigos con el tarray de enemigos
 void ABomberMan_012025GameMode::DestruirEnemigos()
@@ -194,7 +318,12 @@ void ABomberMan_012025GameMode::DestruirEnemigos()
 	}
 }
 
-//quiero que spawnee los enemigos aereos 44444444444
+
+
+
+
+//spawne los enemigos aereos 44444444444
+/*
 void ABomberMan_012025GameMode::SpawnEnemigoAereo()
 {
 	// Definir la posición de spawn
@@ -206,6 +335,8 @@ void ABomberMan_012025GameMode::SpawnEnemigoAereo()
 		aEnemigos.Add(EnemigoAereo);
 	}
 }
+*/
+
 
 /*
 void AMyActor::TestMap()

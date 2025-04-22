@@ -17,25 +17,32 @@ ABloqueLadrillo::ABloqueLadrillo()
             MallaBloque->SetMaterial(0, MaterialBase.Object); // Asignar el material al slot 0
         }
     }
+    // Establecer valores predeterminados
+    PrimaryActorTick.bCanEverTick = true; // Habilitar Tick()
 
-    // Configuración del actor
-    PrimaryActorTick.bCanEverTick = true; // Habilitar el Tick()
-
-    AmplitudMovimiento = 100.0f; // Distancia que se mueve a la izquierda y derecha
+    AmplitudMovimiento = 0.0f; // Altura máxima que sube y baja
     VelocidadMovimiento = 2.0f; // Velocidad del movimiento
 }
 
 void ABloqueLadrillo::BeginPlay()
 {
     Super::BeginPlay();
+
     PosicionInicial = GetActorLocation(); // Guardar la posición inicial
+    
 }
 
 void ABloqueLadrillo::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	// Movimiento en el eje Y adelante y atras
-	float Desplazamiento = FMath::Cos(GetWorld()->GetTimeSeconds() * VelocidadMovimiento) * AmplitudMovimiento;
-	FVector NuevaPosicion = PosicionInicial + FVector(0.0f, Desplazamiento, 0.0f);
-	SetActorLocation(NuevaPosicion);
+	//float Desplazamiento = FMath::Cos(GetWorld()->GetTimeSeconds() * VelocidadMovimiento) * AmplitudMovimiento;
+	//FVector NuevaPosicion = PosicionInicial + FVector(0.0f, Desplazamiento, 0.0f);
+	//SetActorLocation(NuevaPosicion);
+
+    // Calcular nueva posición usando una onda seno
+    float Desplazamiento = FMath::Sin(GetWorld()->GetTimeSeconds() * VelocidadMovimiento) * AmplitudMovimiento;
+    FVector NuevaPosicion = PosicionInicial + FVector(0.0f, 0.0f, Desplazamiento);
+
+    SetActorLocation(NuevaPosicion);
 }
