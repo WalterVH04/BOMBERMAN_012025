@@ -81,46 +81,70 @@ void ABomberMan_012025GameMode::BeginPlay()
 			GetWorld()->SpawnActor<ABloqueMadera>(ABloqueMadera::StaticClass(), PosicionBloque, FRotator::ZeroRotator);
 		}*/
 		
-			
+	
 
-		//para colocar a bomberman sobre un bloque de 
-		TArray<ABloqueMadera*> BloquesCercanosABordes;
 
-		// Filtrar bloques de madera cercanos a los bordes
-		for (ABloque* Bloque : aBloques) {
-			if (Bloque->IsA(ABloqueMadera::StaticClass())) {
-				FVector Posicion = Bloque->GetActorLocation();
-		
-				// Verifica si el bloque está cerca de los bordes del laberinto
-				if (Posicion.X <= XInicial + AnchoBloque ||
-					Posicion.X >= XInicial + (aMapaBloques[0].Num() - 1) * AnchoBloque ||
-					Posicion.Y <= YInicial + LargoBloque ||
-					Posicion.Y >= YInicial + (aMapaBloques.Num() - 1) * LargoBloque) {
+	TArray<ABloqueMadera*> BloquesRodeados;
 
-					BloquesCercanosABordes.Add(Cast<ABloqueMadera>(Bloque));
+	// Buscar bloques de madera rodeados o en el borde
+	for (ABloque* Bloque : aBloques) 
+	{
+		if (Bloque->IsA(ABloqueMadera::StaticClass())) 
+		{
+			FVector Posicion = Bloque->GetActorLocation();
+			int ContadorBloques = 0;
+
+			// Direcciones
+			FVector Direcciones[] = {
+										FVector(AnchoBloque, 0, 0), FVector(-AnchoBloque, 0, 0),
+										FVector(0, LargoBloque, 0), FVector(0, -LargoBloque, 0) 
+										};
+
+			for (FVector Direccion : Direcciones) 
+			{
+				FVector PosicionVecina = Posicion + Direccion;
+				for (ABloque* BloqueVecino : aBloques) 
+				{
+					if (BloqueVecino->GetActorLocation().Equals(PosicionVecina, 1.0f)) 
+					{
+						ContadorBloques++;
+						break;
+					}
 				}
 			}
-		}
 
-		// Si hay bloques de madera cercanos a los bordes, selecciona uno aleatoriamente
-		// Seleccionar aleatoriamente un bloque de madera cercano al borde
-		if (BloquesCercanosABordes.Num() > 0) {
-			int IndexAleatorio = FMath::RandRange(0, BloquesCercanosABordes.Num() - 1);
-			FVector PosicionBomberMan = BloquesCercanosABordes[IndexAleatorio]->GetActorLocation() + FVector(0, 0, 250);
+			//el bloque está en el borde del mapa
+			bool EsBorde = (Posicion.X <= XInicial + AnchoBloque ||
+				Posicion.X >= XInicial + (aMapaBloques[0].Num() - 1) * AnchoBloque ||
+				Posicion.Y <= YInicial + LargoBloque ||
+				Posicion.Y >= YInicial + (aMapaBloques.Num() - 1) * LargoBloque);
 
-			// Ubicar a BomberMan sobre ese bloque
-			APawn* BomberMan = GetWorld()->GetFirstPlayerController()->GetPawn();
-			if (BomberMan) {
-				BomberMan->SetActorLocation(PosicionBomberMan + FVector(0, 0, 100)); // Ajuste en Z para evitar colisiones
+			// Si está rodeado o en el borde, lo agrega a la lista
+			if (ContadorBloques >= 4 || EsBorde) 
+			{
+				BloquesRodeados.Add(Cast<ABloqueMadera>(Bloque));
 			}
-
 		}
+	}
+
+	// Ubicar a BomberMan sobre un bloque válido aleatorio
+	if (BloquesRodeados.Num() > 0) 
+	{
+		ABloqueMadera* BloqueSeleccionado = BloquesRodeados[FMath::RandRange(0, BloquesRodeados.Num() - 1)];
+		FVector PosicionBomberMan = BloqueSeleccionado->GetActorLocation() + FVector(0, 0, 250);
+
+		// spawn de BomberMan
+		if (APawn* BomberMan = GetWorld()->GetFirstPlayerController()->GetPawn()) 
+		{
+			BomberMan->SetActorLocation(PosicionBomberMan + FVector(0, 0, 100)); // Ajuste en Z para evitar colisiones
+		}
+	}
 
 
 
-
-	
+	//insciso 4)
 		// Seleccionar cuatro bloques aleatorios para el movimiento
+		/*
 		int NumBloquesSeleccionados = 0;
 		while (NumBloquesSeleccionados < 4 && aBloques.Num() > 0)
 		{
@@ -136,19 +160,24 @@ void ABomberMan_012025GameMode::BeginPlay()
 
 		// Activar temporizador para mover los bloques cada 3 segundos
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle_MovimientoBloques, this, &ABomberMan_012025GameMode::MoverBloquesAleatorio, 1.0f, true);
-
+		*/
 
 }
 
-
+/*
 void ABomberMan_012025GameMode::MoverBloquesAleatorio()
 {
+	BloquesMovibles.RemoveAll([](ABloque* Bloque)
+		{
+			return !IsValid(Bloque);
+		});
+
 	for (ABloque* Bloque : BloquesMovibles)
 	{
 		if (!Bloque) continue;
 
 		// Elegir aleatoriamente una dirección de movimiento
-		int Direccion = FMath::RandRange(0, 3); // 0: Izquierda, 1: Derecha, 2: Arriba, 3: Abajo
+		int Direccion = FMath::RandRange(0, 5); // 0: Izquierda, 1: Derecha, 2: Arriba, 3: Abajo
 
 		FVector NuevaPosicion = Bloque->GetActorLocation();
 		float EspacioMovimiento = 100.0f; // Tamaño del bloque o unidad de movimiento
@@ -169,12 +198,19 @@ void ABomberMan_012025GameMode::MoverBloquesAleatorio()
 		{
 			NuevaPosicion.Y -= EspacioMovimiento; // Abajo
 		}
-
+		else if (Direccion == 4)
+		{
+			NuevaPosicion.Z += EspacioMovimiento; //arriba eje z
+		}
+		else if (Direccion == 5)
+		{
+			NuevaPosicion.Z -= EspacioMovimiento; //abajo eje z 
+		}
 		// Actualizar la posición del bloque
 		Bloque->SetActorLocation(NuevaPosicion);
 		UE_LOG(LogTemp, Warning, TEXT("Bloque movido a: %s"), *NuevaPosicion.ToString());
 	}
-}
+}*/
 
 
 
